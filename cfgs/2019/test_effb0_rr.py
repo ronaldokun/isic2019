@@ -12,14 +12,14 @@ import imagesize
 def init(mdlParams_):
     mdlParams = {}
     # Save summaries and model here
-    mdlParams['saveDir'] = mdlParams_['pathBase']+'/data/isic/'
+    mdlParams['saveDir'] = mdlParams_['pathBase']+'/out/'
     # Data is loaded from here
-    mdlParams['dataDir'] = mdlParams_['pathBase']+'/data/isic/2019'
+    mdlParams['dataDir'] = mdlParams_['pathBase']+'/data'
 
     ### Model Selection ###
     mdlParams['model_type'] = 'efficientnet-b0'
     mdlParams['dataset_names'] = ['official']#,'sevenpoint_rez3_ll']
-    mdlParams['file_ending'] = '.png'
+    mdlParams['file_ending'] = '.jpg'
     mdlParams['exclude_inds'] = False
     mdlParams['same_sized_crops'] = False
     mdlParams['multiCropEval'] = 9
