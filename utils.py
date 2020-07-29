@@ -646,7 +646,7 @@ def getErrClassification_mgpu(mdlParams, indices, modelVars, exclude_class=None)
                 loss = modelVars['criterion'](outputs, labels)           
             # Write into proper arrays
             loss_mc[i] = np.mean(loss.cpu().numpy())
-            predictions_mc[i,:,:] = np.transpose(preds.cpu().numpy())
+            predictions_mc[i,:,:] = np.transpose(preds.cpu().numpy())[:,mdlParams['multiCropEval']-1]
             tar_not_one_hot = labels.data.cpu().numpy()
             tar = np.zeros((tar_not_one_hot.shape[0], mdlParams['numClasses']))
             tar[np.arange(tar_not_one_hot.shape[0]),tar_not_one_hot] = 1
