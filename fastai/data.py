@@ -6,7 +6,7 @@ import random
 from pathlib import Path
 
 SIZE = 384
-DATA = Path("/content/clouderizer/melanoma/data")
+DATA = Path("/content/clouderizer/melanoma/data/full")
 TRAIN = DATA / "train"
 TEST = DATA / "test"
 HAIRS = DATA / "hairs"

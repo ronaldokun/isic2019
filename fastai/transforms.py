@@ -2,6 +2,8 @@ from data import *
 import cv2
 import random
 import torchtoolbox.transform as transforms
+import albumentations as A
+
 from data import HAIRS
 import os
 
