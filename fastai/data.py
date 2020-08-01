@@ -5,7 +5,7 @@ import torch
 import random
 from pathlib import Path
 
-SIZE = 384
+SIZE = 512
 DATA = Path("/content/clouderizer/melanoma/data/full")
 TRAIN = DATA / "train"
 TEST = DATA / "test"
@@ -63,3 +63,4 @@ def preprocess_df():
     meta_features.remove("anatom_site_general_challenge")
 
     return train_df, test_df, meta_features
+

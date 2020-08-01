@@ -19,6 +19,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 import types
 from auto_augment import AutoAugment, Cutout
+#from fastprogress import progress_bar as tqdm
+from tqdm import tqdm
 
 # Define ISIC Dataset Class
 class ISICDataset(Dataset):
@@ -623,7 +625,7 @@ def getErrClassification_mgpu(mdlParams, indices, modelVars, exclude_class=None)
         loss_mc = np.zeros([len(mdlParams[indices])])
         predictions_mc = np.zeros([len(mdlParams[indices]),mdlParams['numClasses'],mdlParams['multiCropEval']])
         targets_mc = np.zeros([len(mdlParams[indices]),mdlParams['numClasses'],mdlParams['multiCropEval']])   
-        for i, (inputs, labels, inds) in enumerate(modelVars['dataloader_'+indices]):
+        for i, (inputs, labels, inds) in tqdm(enumerate(modelVars['dataloader_'+indices]), total=len(mdlParams[indices])//mdlParams['batchSize']):
             # Get data
             if mdlParams.get('meta_features',None) is not None: 
                 inputs[0] = inputs[0].cuda()
@@ -646,7 +648,8 @@ def getErrClassification_mgpu(mdlParams, indices, modelVars, exclude_class=None)
                 loss = modelVars['criterion'](outputs, labels)           
             # Write into proper arrays
             loss_mc[i] = np.mean(loss.cpu().numpy())
-            predictions_mc[i,:,:] = np.transpose(preds.cpu().numpy())[:,mdlParams['multiCropEval']-1]
+            #print(f'predictions_mc shape: {predictions_mc[i].shape}')
+            predictions_mc[i,:,:] = np.transpose(preds.cpu().numpy()) #[:,mdlParams['multiCropEval']-1]
             tar_not_one_hot = labels.data.cpu().numpy()
             tar = np.zeros((tar_not_one_hot.shape[0], mdlParams['numClasses']))
             tar[np.arange(tar_not_one_hot.shape[0]),tar_not_one_hot] = 1

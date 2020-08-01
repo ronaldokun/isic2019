@@ -15,10 +15,10 @@ import copy
 
 # Just assume fixed CV size for ensemble with evaluation
 cvSize = 5
-numClasses = 8
+numClasses = 2
 
 # First argument is folder, filled with CV results files
-all_preds_path = sys.argv[1]
+all_preds_path = '/content/clouderizer/melanoma/out/2020.test_effb0_rr'
 
 # Second argument indicates, whether we are only generating predictions or actually evaluating performance on something
 if 'eval' in sys.argv[2]:

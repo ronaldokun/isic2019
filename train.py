@@ -24,6 +24,7 @@ import utils
 from sklearn.utils import class_weight
 import psutil
 import models
+from tqdm import tqdm
 
 # add configuration file
 # Dictionary for model configuration
@@ -338,6 +339,9 @@ for cv in cv_set:
     # Loss, with class weighting
     if mdlParams.get('focal_loss',False):
         modelVars['criterion'] = utils.FocalLoss(alpha=class_weights.tolist())
+    elif mdlParams['balance_classes'] == 2:
+        #modelVars['criterion'] = nn.BCEWithLogitsLoss(weight=torch.cuda.FloatTensor(class_weights.astype(np.float32)))
+        modelVars['criterion'] = nn.CrossEntropyLoss()
     elif mdlParams['balance_classes'] == 3 or mdlParams['balance_classes'] == 0 or mdlParams['balance_classes'] == 12:
         modelVars['criterion'] = nn.CrossEntropyLoss()
     elif mdlParams['balance_classes'] == 8:
@@ -353,17 +357,17 @@ for cv in cv_set:
 
     if mdlParams.get('meta_features',None) is not None:
         if mdlParams['freeze_cnn']:
-            modelVars['optimizer'] = optim.Adam(filter(lambda p: p.requires_grad, modelVars['model'].parameters()), lr=mdlParams['learning_rate_meta'])
+            modelVars['optimizer'] = optim.AdamW(filter(lambda p: p.requires_grad, modelVars['model'].parameters()), lr=mdlParams['learning_rate_meta'])
             # sanity check
             for param in filter(lambda p: p.requires_grad, modelVars['model'].parameters()):
                 print(param.name,param.shape)
         else:
-            modelVars['optimizer'] = optim.Adam([
+            modelVars['optimizer'] = optim.AdamW([
                                                 {'params': filter(lambda p: not p.is_cnn_param, modelVars['model'].parameters()), 'lr': mdlParams['learning_rate_meta']},
                                                 {'params': filter(lambda p: p.is_cnn_param, modelVars['model'].parameters()), 'lr': mdlParams['learning_rate']}
                                                 ], lr=mdlParams['learning_rate'])
     else:
-        modelVars['optimizer'] = optim.Adam(modelVars['model'].parameters(), lr=mdlParams['learning_rate'])
+        modelVars['optimizer'] = optim.AdamW(modelVars['model'].parameters(), lr=mdlParams['learning_rate'])
 
     # Decay LR by a factor of 0.1 every 7 epochs
     modelVars['scheduler'] = lr_scheduler.StepLR(modelVars['optimizer'], step_size=mdlParams['lowerLRAfter'], gamma=1/np.float32(mdlParams['LRstep']))
@@ -410,12 +414,12 @@ for cv in cv_set:
     # Run training
     start_time = time.time()
     print("Start training...")
-    for step in range(start_epoch, mdlParams['training_steps']+1):
+    for step in tqdm(range(start_epoch, mdlParams['training_steps']+1)):
         # One Epoch of training
         if step >= mdlParams['lowerLRat']-mdlParams['lowerLRAfter']:
             modelVars['scheduler'].step()
         modelVars['model'].train()      
-        for j, (inputs, labels, indices) in enumerate(modelVars['dataloader_trainInd']):    
+        for j, (inputs, labels, indices) in tqdm(enumerate(modelVars['dataloader_trainInd']), total=len(dataset_train)//mdlParams['batchSize']):    
             #print(indices)                  
             #t_load = time.time() 
             # Run optimization        
@@ -442,7 +446,11 @@ for cv in cv_set:
                     #t_fwd = time.time()   
                     outputs = modelVars['model'](inputs)     
                     #print("forward",time.time()-t_fwd)     
-                    #t_bwd = time.time()   
+                    #t_bwd = time.time()
+                    #outputs = outputs.sum(dim=1, keepdim=True)
+                    #labels = labels.float()
+                    #print(outputs.shape, outputs)
+                    #print(labels.shape, labels)
                     loss = modelVars['criterion'](outputs, labels)         
                 # Perhaps adjust weighting of the loss by the specific index
                 if mdlParams['balance_classes'] == 6 or mdlParams['balance_classes'] == 7 or mdlParams['balance_classes'] == 8:
