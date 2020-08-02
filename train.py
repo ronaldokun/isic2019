@@ -558,7 +558,7 @@ for cv in cv_set:
                     save_dict_train['step_num'].append(step)
                     if os.path.isfile(mdlParams['saveDir'] + '/progression_trainInd.mat'):
                         os.remove(mdlParams['saveDir'] + '/progression_trainInd.mat')                
-                    scipy.io.savemat(mdlParams['saveDir'] + '/progression_trainInd.mat',save_dict_train)                     
+                    io.savemat(mdlParams['saveDir'] + '/progression_trainInd.mat',save_dict_train)                     
                     print("Train loss: ",loss," Accuracy: ",accuracy," F1: ",f1)
                     print("Sensitivity: ",sensitivity,"Specificity",specificity)
     # Free everything in modelvars
