@@ -341,7 +341,7 @@ for cv in cv_set:
         modelVars['criterion'] = utils.FocalLoss(alpha=class_weights.tolist())
     elif mdlParams['balance_classes'] == 2:
         #modelVars['criterion'] = nn.BCEWithLogitsLoss(weight=torch.cuda.FloatTensor(class_weights.astype(np.float32)))
-        modelVars['criterion'] = nn.CrossEntropyLoss()
+        modelVars['criterion'] = nn.CrossEntropyLoss(weight=torch.cuda.FloatTensor(class_weights.astype(np.float32)))
     elif mdlParams['balance_classes'] == 3 or mdlParams['balance_classes'] == 0 or mdlParams['balance_classes'] == 12:
         modelVars['criterion'] = nn.CrossEntropyLoss()
     elif mdlParams['balance_classes'] == 8:
@@ -370,7 +370,12 @@ for cv in cv_set:
         modelVars['optimizer'] = optim.AdamW(modelVars['model'].parameters(), lr=mdlParams['learning_rate'])
 
     # Decay LR by a factor of 0.1 every 7 epochs
-    modelVars['scheduler'] = lr_scheduler.StepLR(modelVars['optimizer'], step_size=mdlParams['lowerLRAfter'], gamma=1/np.float32(mdlParams['LRstep']))
+#     modelVars['scheduler'] = lr_scheduler.StepLR(modelVars['optimizer'], step_size=mdlParams['lowerLRAfter'], gamma=1/np.float32(mdlParams['LRstep']))
+    
+    modelVars['scheduler'] = lr_scheduler.OneCycleLR(modelVars['optimizer'], max_lr=mdlParams['learning_rate'],
+                                                     epochs=mdlParams['training_steps'],
+                                                     steps_per_epoch=len(dataset_train)//mdlParams['batchSize'])
+
 
     # Define softmax
     modelVars['softmax'] = nn.Softmax(dim=1)
@@ -416,8 +421,8 @@ for cv in cv_set:
     print("Start training...")
     for step in tqdm(range(start_epoch, mdlParams['training_steps']+1)):
         # One Epoch of training
-        if step >= mdlParams['lowerLRat']-mdlParams['lowerLRAfter']:
-            modelVars['scheduler'].step()
+#         if step >= mdlParams['lowerLRat']-mdlParams['lowerLRAfter']:
+#             modelVars['scheduler'].step()
         modelVars['model'].train()      
         for j, (inputs, labels, indices) in tqdm(enumerate(modelVars['dataloader_trainInd']), total=len(dataset_train)//mdlParams['batchSize']):    
             #print(indices)                  
@@ -460,8 +465,9 @@ for cv in cv_set:
                     loss = torch.mean(loss)
                     #loss = loss.cuda()
                 # backward + optimize only if in training phase
-                loss.backward()                 
-                modelVars['optimizer'].step()     
+                loss.backward()
+                modelVars['optimizer'].step()
+                modelVars['scheduler'].step()
                 #print("backward",time.time()-t_bwd)                             
         if step % mdlParams['display_step'] == 0 or step == 1:
             # Calculate evaluation metrics
