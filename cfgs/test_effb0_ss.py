@@ -15,6 +15,7 @@ from tqdm import tqdm
 def init(mdlParams_):
     if Path('mdlParams_ss.pkl').exists():
         mdlParams = pd.read_pickle('mdlParams_ss.pkl')
+        return mdlParams
     else:
         mdlParams = {}
     # Save summaries and model here
