@@ -57,7 +57,7 @@ def init(mdlParams_):
     # Batch size
     mdlParams['batchSize'] = 16#*len(mdlParams['numGPUs'])
     # Initial learning rate
-    mdlParams['learning_rate'] = 0.01#*len(mdlParams['numGPUs'])
+    mdlParams['learning_rate'] = 0.001#*len(mdlParams['numGPUs'])
     # Lower learning rate after no improvement over 100 epochs
     mdlParams['lowerLRAfter'] = 25
     # If there is no validation set, start lowering the LR after X steps
@@ -65,7 +65,7 @@ def init(mdlParams_):
     # Divide learning rate by this value
     mdlParams['LRstep'] = 5
     # Maximum number of training iterations
-    mdlParams['training_steps'] = 20 #250
+    mdlParams['training_steps'] = 40 #250
     # Display error every X steps
     mdlParams['display_step'] = 1
     # Scale?

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import h5py
 import re
@@ -13,10 +13,10 @@ from pathlib import Path
 from tqdm import tqdm
 
 def init(mdlParams_):
-#     if Path('mdlParams_ss.pkl').exists():
-#         mdlParams = pd.read_pickle('mdlParams_ss.pkl')
-#         return mdlParams
-    mdlParams = {}
+    if Path('mdlParams_ss.pkl').exists():
+        mdlParams = pd.read_pickle('mdlParams_ss.pkl')
+    else:
+        mdlParams = {}
     # Save summaries and model here
     mdlParams['saveDir'] = mdlParams_['pathBase']+'/out/'
     # Data is loaded from here
@@ -57,7 +57,7 @@ def init(mdlParams_):
     # Maximum number of training iterations
     mdlParams['training_steps'] = 40 #250
     # Display error every X steps
-    mdlParams['display_step'] = 10
+    mdlParams['display_step'] = 1
     # Scale?
     mdlParams['scale_targets'] = False
     # Peak at test error during training? (generally, dont do this!)
