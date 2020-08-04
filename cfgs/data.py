@@ -1,4 +1,5 @@
 from pathlib import Path
+import imagesize
 import numpy as np
 
 BASE_PATH = Path.cwd().expanduser().parent
@@ -7,7 +8,7 @@ def ordered_crop(params):
     # Crop positions, always choose multiCropEval to be 4, 9, 16, 25, etc.
     params['cropPositions'] = np.zeros([len(params['img_paths']),params['multiCropEval'],2],dtype=np.int64)
     #params['imSizes'] = np.zeros([len(params['im_paths']),params['multiCropEval'],2],dtype=np.int64)
-    for u, img in enumerate(params['img_paths'].iterdir()):
+    for u, img in enumerate(params['img_paths']):
         height, width = imagesize.get(img)
         if width < params['input_size'][0]:
             height = int(params['input_size'][0]/float(width))*height
@@ -27,7 +28,7 @@ def ordered_crop(params):
     # Test image sizes
     height = params['input_size'][0]
     width = params['input_size'][1]
-    for u, img in enumerate(params['img_paths'].iterdir()):
+    for u, img in enumerate(params['img_paths']):
         height_test, width_test = imagesize.get(img)
         if width_test < params['input_size'][0]:
             height_test = int(params['input_size'][0]/float(width_test))*height_test

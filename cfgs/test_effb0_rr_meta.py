@@ -55,7 +55,8 @@ num_scales = 4
 all_scales = [1.0,0.5,0.75,0.25,0.9,0.6,0.4]
 params['cropScales'] = all_scales[:num_scales]
 params['cropFlipping'] = 4
-params['multiCropEval'] = params['numCropPositions']*len(params['cropScales'])*params['cropFlipping']
+params['multiCropEval'] =  params['numCropPositions']*len(params['cropScales'])*params['cropFlipping']
+params['numCropPositions']*len(params['cropScales'])*params['cropFlipping']
 params['offset_crop'] = 0.2    
 
 # ## Scale up for b1-b7

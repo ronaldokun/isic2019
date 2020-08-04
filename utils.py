@@ -1,10 +1,10 @@
 import os
 import torch
-#import pandas as pd
+import pandas as pd
 from skimage import io, transform
 import scipy
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 import torch.nn.functional as F
 import torch.nn as nn
@@ -21,6 +21,84 @@ import types
 from auto_augment import AutoAugment, Cutout
 #from fastprogress import progress_bar as tqdm
 from tqdm import tqdm
+
+def print_history(fold,history,num_epochs):
+        plt.figure(figsize=(15,5))
+        
+        plt.plot(
+            np.arange(num_epochs),
+            history['train_history_auc'],
+            '-o',
+            label='Train AUC',
+            color='#ff7f0e'
+        )
+        
+        plt.plot(
+            np.arange(num_epochs),
+            history['val_history_auc'],
+            '-o',
+            label='Val AUC',
+            color='#1f77b4'
+        )
+        
+        x = np.argmax(history['val_history_auc'])
+        y = np.max(history['val_history_auc'])
+        
+        xdist = plt.xlim()[1] - plt.xlim()[0]
+        ydist = plt.ylim()[1] - plt.ylim()[0]
+        
+        plt.scatter(x, y, s=200, color='#1f77b4')
+        
+        plt.text(
+            x-0.03*xdist,
+            y-0.13*ydist,
+            'max auc\n%.2f'%y,
+            size=14
+        )
+        
+        plt.ylabel('AUC', size=14)
+        plt.xlabel('Epoch', size=14)
+        
+        plt.legend(loc=2)
+        
+        plt2 = plt.gca().twinx()
+        
+        plt2.plot(
+            np.arange(num_epochs),
+            history['train_history_loss'],
+            '-o',
+            label='Train Loss',
+            color='#2ca02c'
+        )
+        
+        plt2.plot(
+            np.arange(num_epochs),
+            history['val_history_loss'],
+            '-o',
+            label='Val Loss',
+            color='#d62728'
+        )
+        
+        x = np.argmin(history['val_history_loss'])
+        y = np.min(history['val_history_loss'])
+        
+        ydist = plt.ylim()[1] - plt.ylim()[0]
+        
+        plt.scatter(x, y, s=200, color='#d62728')
+        
+        plt.text(
+            x-0.03*xdist, 
+            y+0.05*ydist, 
+            'min loss', 
+            size=14
+        )
+        
+        plt.ylabel('Loss', size=14)
+        
+        plt.title(f'FOLD {fold + 1}',size=18)
+        
+        plt.legend(loc=3)
+        plt.show()  
 
 # Define ISIC Dataset Class
 class ISICDataset(Dataset):
@@ -94,7 +172,7 @@ class ISICDataset(Dataset):
             print("Intersect val",np.intersect1d(indices,mdlParams['valInd']),"Intersect Testind",np.intersect1d(indices,mdlParams['testInd']))
             # Set labels/inputs
             self.labels = mdlParams['labels_array'][indices,:]
-            self.im_paths = np.array(mdlParams['im_paths'])[indices].tolist()     
+            self.img_paths = np.array(mdlParams['img_paths'])[indices].tolist()     
             # Normal train proc
             if self.same_sized_crop:
                 cropping = transforms.RandomCrop(self.input_size)
@@ -121,8 +199,8 @@ class ISICDataset(Dataset):
                 if mdlParams.get('meta_features',None) is not None:
                     self.meta_data = mdlParams['meta_array'][inds_rep,:]    
                 # Path to images for loading, only for current indSet, repeat for multiordercrop
-                self.im_paths = np.array(mdlParams['im_paths'])[inds_rep].tolist()
-                print("len im path",len(self.im_paths))                
+                self.img_paths = np.array(mdlParams['img_paths'])[inds_rep].tolist()
+                print("len im path",len(self.img_paths))                
                 if self.mdlParams.get('var_im_size',False):
                     self.cropPositions = np.tile(mdlParams['cropPositions'][mdlParams[indSet],:,:],(1,mdlParams['eval_flipping'],1))
                     self.cropPositions = np.reshape(self.cropPositions,[mdlParams['multiCropEval']*mdlParams['eval_flipping']*mdlParams[indSet].shape[0],2])
@@ -149,8 +227,8 @@ class ISICDataset(Dataset):
                 if mdlParams.get('meta_features',None) is not None:
                     self.meta_data = mdlParams['meta_array'][inds_rep,:]                 
                 # Path to images for loading, only for current indSet, repeat for multiordercrop
-                self.im_paths = np.array(mdlParams['im_paths'])[inds_rep].tolist()
-                print("len im path",len(self.im_paths))
+                self.img_paths = np.array(mdlParams['img_paths'])[inds_rep].tolist()
+                print("len im path",len(self.img_paths))
                 # Set up crop positions for every sample                
                 if self.mdlParams.get('var_im_size',False):
                     self.cropPositions = np.reshape(mdlParams['cropPositions'][mdlParams[indSet],:,:],[mdlParams['multiCropEval']*mdlParams[indSet].shape[0],2])
@@ -174,7 +252,7 @@ class ISICDataset(Dataset):
                 if mdlParams.get('meta_features',None) is not None:
                     self.meta_data = mdlParams['meta_array'][mdlParams[indSet],:]                 
                 # Path to images for loading, only for current indSet
-                self.im_paths = np.array(mdlParams['im_paths'])[mdlParams[indSet]].tolist()                   
+                self.img_paths = np.array(mdlParams['img_paths'])[mdlParams[indSet]].tolist()                   
             else:
                 # Deterministic processing
                 if self.mdlParams.get('deterministic_eval',False):
@@ -198,7 +276,7 @@ class ISICDataset(Dataset):
                     if mdlParams.get('meta_features',None) is not None:
                         self.meta_data = mdlParams['meta_array'][inds_rep,:]                     
                     # Path to images for loading, only for current indSet, repeat for multiordercrop
-                    self.im_paths = np.array(mdlParams['im_paths'])[inds_rep].tolist()
+                    self.img_paths = np.array(mdlParams['img_paths'])[inds_rep].tolist()
                 else:
                     self.cropping = transforms.RandomResizedCrop(self.input_size[0],scale=(mdlParams.get('scale_min',0.08),1.0))
                     # Complete labels array, only for current indSet, repeat for multiordercrop
@@ -208,8 +286,8 @@ class ISICDataset(Dataset):
                     if mdlParams.get('meta_features',None) is not None:
                         self.meta_data = mdlParams['meta_array'][inds_rep,:]                    
                     # Path to images for loading, only for current indSet, repeat for multiordercrop
-                    self.im_paths = np.array(mdlParams['im_paths'])[inds_rep].tolist()
-            print(len(self.im_paths))  
+                    self.img_paths = np.array(mdlParams['img_paths'])[inds_rep].tolist()
+            print(len(self.img_paths))  
             # Set up transforms
             self.norm = transforms.Normalize(np.float32(self.mdlParams['setMean']),np.float32(self.mdlParams['setStd']))
             self.trans = transforms.ToTensor()                   
@@ -257,12 +335,12 @@ class ISICDataset(Dataset):
             if mdlParams.get('meta_features',None) is not None:
                 self.meta_data = mdlParams['meta_array'][mdlParams[indSet],:]            
             # Path to images for loading, only for current indSet
-            self.im_paths = np.array(mdlParams['im_paths'])[mdlParams[indSet]].tolist()
+            self.img_paths = np.array(mdlParams['img_paths'])[mdlParams[indSet]].tolist()
         # Potentially preload
         if self.preload:
             self.im_list = []
-            for i in range(len(self.im_paths)):
-                self.im_list.append(Image.open(self.im_paths[i]))
+            for i in range(len(self.img_paths)):
+                self.im_list.append(Image.open(self.img_paths[i]))
     def __len__(self):
         return self.labels.shape[0]
 
@@ -271,7 +349,7 @@ class ISICDataset(Dataset):
         if self.preload:
             x = self.im_list[idx]
         else:
-            x = Image.open(self.im_paths[idx])
+            x = Image.open(self.img_paths[idx])
             if self.mdlParams.get('resize_large_ones',0) > 0 and (x.size[0] == self.mdlParams['large_size'] and x.size[1] == self.mdlParams['large_size']):
                 width = self.mdlParams['resize_large_ones']
                 height = self.mdlParams['resize_large_ones']
@@ -305,7 +383,7 @@ class ISICDataset(Dataset):
                 x = self.trans(x)
                 # Normalize
                 x = self.norm(x)   
-                #print(self.im_paths[idx])
+                #print(self.img_paths[idx])
                 #print("Before",x.size(),"xloc",x_loc,"y_loc",y_loc)
                 if self.mdlParams.get('eval_flipping',0) > 1:
                     if self.flipPositions[idx] == 1:
