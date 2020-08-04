@@ -709,7 +709,7 @@ def eval_fn(cv, step):
     if (params['save_dir'] / f'checkpoint-{lastInd}.pt').is_file():
         (params['save_dir'] / f'checkpoint-{lastInd}.pt').unlink()
         
-    return loss.item(),predictions,targets  
+    return loss.item(),predictions,targets, conf_matrix  
 
 
 # Take care of CV
@@ -787,7 +787,7 @@ for cv in cv_set:
     tk0 = tqdm(range(start_epoch, params['training_steps']+1))
     for step in tk0: 
         train_loss,train_out,train_targets = train_fn()
-        val_loss, outputs, targets = eval_fn(cv, step)
+        val_loss, outputs, targets, conf_matrix = eval_fn(cv, step)
         
         duration = time.time() - start_time
         print("Config:",OUT)
@@ -798,7 +798,7 @@ for cv in cv_set:
                         ACC=save_dict['acc'],
                         F1=save_dict['f1'],
                         AUC=save_dict['auc'],
-                        WAUC=save_dict['wauc'], 
+                        WAUC=save_dict['wacc'], 
                         Sensitivity=save_dict['sens'], 
                         Specificity=save_dict['spec'], 
                         Best=f"best WACC: {params['valBest']} at Epoch {params['lastBestInd']}"
@@ -806,12 +806,11 @@ for cv in cv_set:
         print("Confusion Matrix")
         print(conf_matrix)
         
-        modelVars['scheduler'].step(save_dict['auc'])
-        
+        modelVars['scheduler'].step(np.mean(save_dict['auc']))        
         history['train_history_loss'].append(train_loss)
         history['train_history_auc'].append(train_auc)
         history['val_history_loss'].append(val_loss)
-        history['val_history_auc'].append(auc_score)
+        history['val_history_auc'].append(np.mean(save_dict['auc']))
         
     utils.print_history(cv,history,num_epochs=step+1)
 

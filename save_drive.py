@@ -12,6 +12,6 @@ d2 = DRIVE /  "out"
 
 while True:
     #get_ipython().system(f"rclone sync {s1} {d1} -q --fast-list")
-    command = f'rclone copy {s2} {d2} --fast-list -v'
+    command = f'rclone sync {s2} {d2} --fast-list -v'
     get_ipython().system(command)
     sleep(360)
