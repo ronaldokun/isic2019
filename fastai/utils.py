@@ -3,10 +3,13 @@ import cv2
 import random
 import torchtoolbox.transform as transforms
 import albumentations as A
+from albumentations.pytorch.transforms import ToTensorV2
 
 from data import HAIRS
 import os
 
+resolution = 456  # orignal res for B5
+input_res  = 512
 
 class AdvancedHairAugmentation:
 
