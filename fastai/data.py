@@ -92,7 +92,7 @@ def stratified_group_k_fold(X, y, groups, k, seed=None):
     groups_and_y_counts = list(y_counts_per_group.items())
     random.Random(seed).shuffle(groups_and_y_counts)
 
-    for g, y_counts in tqdm(sorted(groups_and_y_counts, key=lambda x: -np.std(x[1])), total=len(groups_and_y_counts)):
+    for g, y_counts in sorted(groups_and_y_counts, key=lambda x: -np.std(x[1])): #, total=len(groups_and_y_counts):
         best_fold = None
         min_eval = None
         for i in range(k):
@@ -114,9 +114,9 @@ def stratified_group_k_fold(X, y, groups, k, seed=None):
         yield train_indices, test_indices
         
 def split_full_data():
-    df_folds = pd.read_csv(f'{DATA_PATH}/external_upsampled_tabular.csv').rename({'image_name': 'image_id'}, axis=1)
+    df_folds = pd.read_csv(f'{DATA}/external_upsampled_tabular.csv').rename({'image_name': 'image_id'}, axis=1)
 
-    df2 = pd.read_csv(f'{DATA_PATH}/folds_13062020.csv')
+    df2 = pd.read_csv(f'{DATA}/folds_13062020.csv')
 
     df_folds = pd.merge(df_folds, df2, on=['image_id'], how='left').iloc[:, 0:8]
     df_folds.columns = ['image_id', 'sex', 'age_approx', 'anatom_site_general_challenge', 'target', 'width', 'height', 'patient_id']
