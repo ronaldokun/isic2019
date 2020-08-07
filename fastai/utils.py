@@ -9,7 +9,8 @@ from data import HAIRS
 import os
 
 resolution = 456  # orignal res for B5
-input_res  = 512
+input_res = 384
+
 
 class AdvancedHairAugmentation:
 
@@ -183,19 +184,19 @@ def get_train_transforms():
     return A.Compose(
         [
             A.JpegCompression(p=0.5),
+            A.Resize(384, 384),
             A.Rotate(limit=80, p=1.0),
             A.OneOf(
                 [A.OpticalDistortion(), A.GridDistortion(), A.IAAPiecewiseAffine()]
             ),
             A.RandomSizedCrop(
-                min_max_height=(int(resolution * 0.7), input_res),
+                min_max_height=(int(resolution * 0.5), input_res),
                 height=resolution,
                 width=resolution,
                 p=1.0,
             ),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.5),
-            Microscope(p=0.5),
             A.GaussianBlur(p=0.3),
             A.OneOf([A.RandomBrightnessContrast(), A.HueSaturationValue(),]),
             A.Cutout(
