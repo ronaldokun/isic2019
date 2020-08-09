@@ -18,12 +18,12 @@ arch = "efficientnet-b5"
 resolution = 456  # orignal res for B5
 input_res = 512
 
-lr = 8e-5  # * batch_size
+lr = 1e-5  # * batch_size
 weight_decay = 2e-5
 pos_weight = 5.5
 label_smoothing = 0.03
 
-max_epochs = 8
+max_epochs = 5
 # #!pip install --upgrade wandb
 # !wandb login 6ff8d5e5bd920e68d1f76b574f1880278b4ac8d2
 
@@ -128,7 +128,7 @@ import wandb
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-SAVE_DIR = OUT / f"pl/fold_{fold_number}"
+SAVE_DIR = OUT / "eff5"
 SAVE_DIR.mkdir(exist_ok=True, parents=True)
 print(torch.__version__)
 
@@ -226,8 +226,12 @@ class Model(pl.LightningModule):
         y_hat = torch.cat([x["y_hat"] for x in outputs])
         assert len(df_test) == len(y_hat), f"{len(df_test)} != {len(y_hat)}"
         df_test["target"] = y_hat.tolist()
-        N = len(glob("submission*.csv"))
-        df_test.target.to_csv(f"submission{N}.csv")
+        N = len(
+            list((SAVE_DIR.parent / "sub").glob("submission-fold-{fold_number}*.csv"))
+        )
+        df_test.target.to_csv(
+            SAVE_DIR.parent / "sub" / f"submission-fold-{fold_number}_{N}.csv"
+        )
         return {"tta": N}
 
     def train_dataloader(self):
@@ -237,7 +241,7 @@ class Model(pl.LightningModule):
             num_workers=num_workers,
             drop_last=True,
             shuffle=True,
-            pin_memory=False,
+            pin_memory=True,
         )
 
     def val_dataloader(self):
@@ -247,7 +251,7 @@ class Model(pl.LightningModule):
             num_workers=num_workers,
             drop_last=False,
             shuffle=False,
-            pin_memory=False,
+            pin_memory=True,
         )
 
     def test_dataloader(self):
@@ -261,8 +265,7 @@ class Model(pl.LightningModule):
         )
 
 
-checkpoint = sorted(list(SAVE_DIR.iterdir()), key=lambda x: int(x.stem[:2]))
-checkpoint = str(checkpoint[-1]) if len(checkpoint) else None
+checkpoint = f"{SAVE_DIR}/best-{fold_number}.ckpt"
 model = Model()  # .load_from_checkpoint(str(checkpoint))
 
 # +
@@ -281,12 +284,12 @@ model = Model()  # .load_from_checkpoint(str(checkpoint))
 
 wandb.init(
     project="melanoma",
-    tags=["lightning", "lookahead", "ralamb"],
+    tags=["lightning", "adam", "OneCycle"],
     name=f"upsampled_full_data-fold-{fold_number}",
 )
 wandb_logger = WandbLogger(
     project="melanoma",
-    tags=["lightning", "lookahead", "ralamb"],
+    tags=["lightning", "adam", "OneCycle"],
     name=f"upsampled_full_data-fold-{fold_number}",
 )
 wandb.watch(model)
@@ -298,7 +301,7 @@ wandb.watch(model)
 # del batch; del targets
 
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
-    filepath=SAVE_DIR / "{epoch:02d}_{val_auc:.4f}",
+    filepath=f"{SAVE_DIR}/best-{fold_number}",
     save_top_k=1,
     monitor="val_auc",
     mode="max",

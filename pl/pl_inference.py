@@ -243,26 +243,24 @@ class Model(pl.LightningModule):
 
 # %%
 for fold in range(5):
-    SAVE_DIR = OUT / f"pl/fold_{fold}"
+    SAVE_DIR = OUT / "effb5"
     ds_train, ds_val, ds_test = load_datasets(fold)
     print(SAVE_DIR)
 
-    checkpoint = sorted(
-        [f for f in SAVE_DIR.iterdir() if f.is_file() and f.suffix == ".ckpt"],
-        key=lambda x: float(x.stem.split("_")[-1]),
-    )[-1]
+    if (OUT / "submission_fold{fold}.csv").exists() or fold == 2:
+        continue
+
+    checkpoint = f"{SAVE_DIR}/best-{fold}.ckpt"
     model = Model()
-    trainer = pl.Trainer(
-        resume_from_checkpoint=str(checkpoint), gpus=gpus, precision=16
-    )
+    trainer = pl.Trainer(resume_from_checkpoint=checkpoint, gpus=gpus, precision=16)
     for i in range(tta):
-        if (SAVE_DIR / f"submission{i}.csv").exists():
+        if (OUT / "temp" / f"submission-fold-{fold}_{i}.csv").exists():
             continue
         trainer.test(model)
         # merge TTA
     submission = df_test.copy()
     submission["target"] = 0.0
-    for sub in SAVE_DIR.glob("submission*.csv"):
+    for sub in (OUT / "temp").glob(f"submission-fold-{fold}*.csv"):
         submission["target"] += (
             pd.read_csv(sub, index_col="image_name").target.fillna(0).values
         )
@@ -273,30 +271,37 @@ for fold in range(5):
     submission.hist(bins=100, log=True, alpha=0.6)
     submission.target.describe()
     submission.reset_index()[["image_name", "target"]].to_csv(
-        f"{SAVE_DIR.parent}/submission_fold{fold}.csv", index=False
+        f"{OUT}/subs/submission_fold{fold}.csv", index=False
     )
 
 # %%
+SAVE_DIR = OUT / "subs"
 folds_sub = [
     pd.read_csv(path, index_col="image_name").target.values
-    for path in Path(f"{SAVE_DIR.parent}").iterdir()
+    for path in Path(f"{SAVE_DIR}").iterdir()
     if "_fold" in path.name
 ]
 
 submission = df_test.copy()
 
-target = np.concatenate(folds_sub).mean(0)
+target = np.stack(folds_sub).mean(0)
+# %%
 # incremental blend with equal weights for all folds
 submission["target"] = target
 
-submission.to_csv(SAVE_DIR.parent / "submission.csv", index=False)
+submission = submission.reset_index()[["image_name", "target"]]
+
+submission.to_csv(SAVE_DIR / "submission.csv", index=False)
 
 submission.hist(bins=100, log=True, alpha=0.6)
 submission.target.describe()
 
 
 # %%
-get_ipython().system(
-    'kaggle competitions submit -c siim-isic-melanoma-classification -f {SAVE_DIR.parent}/submission.csv -m "Pytorch Lightning Upsampled Full Data"'
-)
+# get_ipython().system(
+#     'kaggle competitions submit -c siim-isic-melanoma-classification -f {SAVE_DIR}/submission.csv -m "Pytorch Lightning Upsampled Full Data"'
+# )
+
+
+# %%
 
