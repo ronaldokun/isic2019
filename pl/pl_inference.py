@@ -206,7 +206,7 @@ class Model(pl.LightningModule):
         y_hat = torch.cat([x["y_hat"] for x in outputs])
         assert len(df_test) == len(y_hat), f"{len(df_test)} != {len(y_hat)}"
         df_test["target"] = y_hat.tolist()
-        N = len(glob(SAVE_DIR / "submission*.csv"))
+        N = len(list(SAVE_DIR.glob("submission*.csv")))
         df_test.target.to_csv(SAVE_DIR / f"submission{N}.csv")
         return {"tta": N}
 
@@ -255,12 +255,14 @@ for fold in range(5):
     trainer = pl.Trainer(
         resume_from_checkpoint=str(checkpoint), gpus=gpus, precision=16
     )
-    for _ in range(tta):
+    for i in range(tta):
+        if (SAVE_DIR / f"submission{i}.csv").exists():
+            continue
         trainer.test(model)
         # merge TTA
     submission = df_test.copy()
     submission["target"] = 0.0
-    for sub in glob(f"{SAVE_DIR}/submission*.csv"):
+    for sub in SAVE_DIR.glob("submission*.csv"):
         submission["target"] += (
             pd.read_csv(sub, index_col="image_name").target.fillna(0).values
         )
