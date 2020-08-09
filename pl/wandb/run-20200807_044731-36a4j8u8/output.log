@@ -1,0 +1,7 @@
+2020-08-07 04:47:39.176616: I tensorflow/compiler/xla/xla_client/mesh_service.cc:208] Waiting to connect to client mesh master (300 seconds) localhost:37577
+
+  | Name | Type         | Params
+--------------------------------------
+0 | net  | EfficientNet | 28 M  
+Validation sanity check: 0it [00:00, ?it/s]Validation sanity check:  50%|██████████████████████████████████████                                      | 1/2 [00:04<00:04,  4.73s/it]Validation sanity check: 100%|████████████████████████████████████████████████████████████████████████████| 2/2 [00:11<00:00,  5.36s/it]Epoch 0 acc:0.699999988079071 auc:0.7894737124443054
+                                                                                                                                        

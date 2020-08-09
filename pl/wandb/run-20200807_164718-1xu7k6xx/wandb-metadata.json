@@ -1,0 +1,24 @@
+{
+    "root": "/content/clouderizer/melanoma/code",
+    "program": "pl.py",
+    "git": {
+        "remote": "git@github.com:ronaldokun/isic2019.git",
+        "commit": "c6c836ded1bd86acf43825e2d8262e67bc1e11b0"
+    },
+    "email": "=",
+    "startedAt": "2020-08-07T16:47:19.047873",
+    "host": "ba9392f2b061",
+    "username": "root",
+    "executable": "/usr/bin/python3",
+    "os": "Linux-4.19.112+-x86_64-with-Ubuntu-18.04-bionic",
+    "python": "3.6.9",
+    "cpu_count": 2,
+    "cuda": "10.1.243",
+    "args": [],
+    "state": "running",
+    "jobType": null,
+    "mode": "run",
+    "name": "upsampled_full_data_tpu",
+    "project": "melanoma",
+    "heartbeatAt": "2020-08-07T18:32:46.531684"
+}

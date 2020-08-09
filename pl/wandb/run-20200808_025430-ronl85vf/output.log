@@ -1,0 +1,18 @@
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+CUDA_VISIBLE_DEVICES: [0]
+Using native 16bit precision.
+Traceback (most recent call last):
+  File "pl.py", line 401, in <module>
+    # -
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/trainer.py", line 956, in fit
+    self._run_lr_finder_internally(model)
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/lr_finder.py", line 58, in _run_lr_finder_internally
+    lr_finder = self.lr_find(model)
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/lr_finder.py", line 180, in lr_find
+    self.save_checkpoint(str(save_path))
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/training_io.py", line 268, in save_checkpoint
+    checkpoint = self.dump_checkpoint(weights_only)
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/training_io.py", line 362, in dump_checkpoint
+    checkpoint['native_amp_scaling_state'] = self.scaler.state_dict()
+AttributeError: 'NoneType' object has no attribute 'state_dict'

@@ -1,0 +1,49 @@
+
+  | Name | Type         | Params
+--------------------------------------
+0 | net  | EfficientNet | 28 M  
+Validation sanity check: 0it [00:00, ?it/s]Validation sanity check:  50%|█████████████████████████████████████████████████████████████████████████                                                                         | 1/2 [00:01<00:01,  1.05s/it]Validation sanity check: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:01<00:00,  1.21it/s]Epoch 0 acc:1.0 auc:0.5
+                                                                                                                                                                                                              Training: 0it [00:00, ?it/s]Training:   0%|                                                                                                                                                                      | 0/2455 [00:00<?, ?it/s]Epoch 2:   0%|                                                                                                                                                                       | 0/2455 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "pl.py", line 396, in <module>
+    trainer.fit(model)
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/trainer.py", line 1003, in fit
+    results = self.single_gpu_train(model)
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/distrib_parts.py", line 186, in single_gpu_train
+    results = self.run_pretrain_routine(model)
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/trainer.py", line 1213, in run_pretrain_routine
+    self.train()
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/training_loop.py", line 370, in train
+    self.run_training_epoch()
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/training_loop.py", line 452, in run_training_epoch
+    batch_output = self.run_training_batch(batch, batch_idx)
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/training_loop.py", line 632, in run_training_batch
+    self.hiddens
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/training_loop.py", line 773, in optimizer_closure
+    opt_idx, hiddens)
+  File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/training_loop.py", line 946, in training_forward
+    output = self.model.training_step(*args)
+  File "pl.py", line 279, in training_step
+    loss, y, y_hat = self.step(batch)
+  File "pl.py", line 271, in step
+    y_hat = self(x).flatten()
+  File "/usr/local/lib/python3.6/dist-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "pl.py", line 250, in forward
+    return self.net(x)
+  File "/usr/local/lib/python3.6/dist-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/usr/local/lib/python3.6/dist-packages/efficientnet_pytorch/model.py", line 193, in forward
+    x = self.extract_features(inputs)
+  File "/usr/local/lib/python3.6/dist-packages/efficientnet_pytorch/model.py", line 182, in extract_features
+    x = block(x, drop_connect_rate=drop_connect_rate)
+  File "/usr/local/lib/python3.6/dist-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/usr/local/lib/python3.6/dist-packages/efficientnet_pytorch/model.py", line 77, in forward
+    x = self._swish(self._bn0(self._expand_conv(inputs)))
+  File "/usr/local/lib/python3.6/dist-packages/torch/nn/modules/module.py", line 722, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/usr/local/lib/python3.6/dist-packages/torch/nn/modules/batchnorm.py", line 136, in forward
+    self.weight, self.bias, bn_training, exponential_average_factor, self.eps)
+  File "/usr/local/lib/python3.6/dist-packages/torch/nn/functional.py", line 2016, in batch_norm
+    training, momentum, eps, torch.backends.cudnn.enabled
+RuntimeError: CUDA out of memory. Tried to allocate 18.00 MiB (GPU 0; 14.73 GiB total capacity; 13.71 GiB already allocated; 5.88 MiB free; 13.84 GiB reserved in total by PyTorch)
