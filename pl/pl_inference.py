@@ -121,7 +121,8 @@ from dataset import load_datasets
 from utils import get_train_transforms, get_valid_transforms, get_tta_transforms
 from data import *
 from pathlib import Path
-from fastprogress import progress_bar as tqdm
+from tqdm import tqdm
+#from fastprogress import progress_bar as tqdm
 
 # %%
 from efficientnet_pytorch import EfficientNet
@@ -206,8 +207,8 @@ class Model(pl.LightningModule):
         y_hat = torch.cat([x["y_hat"] for x in outputs])
         assert len(df_test) == len(y_hat), f"{len(df_test)} != {len(y_hat)}"
         df_test["target"] = y_hat.tolist()
-        N = len(list(SAVE_DIR.glob("submission*.csv")))
-        df_test.target.to_csv(SAVE_DIR / f"submission{N}.csv")
+        N = len(list(TTA.glob("submission*.csv")))
+        df_test.target.to_csv(TTA / f"submission{N}.csv")
         return {"tta": N}
 
     def train_dataloader(self):
@@ -243,24 +244,24 @@ class Model(pl.LightningModule):
 
 # %%
 for fold in range(5):
-    SAVE_DIR = OUT / "effb5"
-    ds_train, ds_val, ds_test = load_datasets(fold)
-    print(SAVE_DIR)
-
-    if (OUT / "submission_fold{fold}.csv").exists() or fold == 2:
+    if (OUT / 'subs' / f"submission_fold{fold}.csv").exists():
         continue
-
+    SAVE_DIR = OUT / "effb5"
+    TTA = OUT / f'fold_{fold}'
+    TTA.mkdir(exist_ok=True)
+    ds_train, ds_val, ds_test = load_datasets(fold)
+    print(f'Analysing fold: {fold}')    
     checkpoint = f"{SAVE_DIR}/best-{fold}.ckpt"
     model = Model()
     trainer = pl.Trainer(resume_from_checkpoint=checkpoint, gpus=gpus, precision=16)
-    for i in range(tta):
-        if (OUT / "temp" / f"submission-fold-{fold}_{i}.csv").exists():
+    for i in tqdm(range(tta)):
+        if (TTA / f"submission{i}.csv").exists():
             continue
         trainer.test(model)
         # merge TTA
     submission = df_test.copy()
     submission["target"] = 0.0
-    for sub in (OUT / "temp").glob(f"submission-fold-{fold}*.csv"):
+    for sub in TTA.glob(f"submission*.csv"):
         submission["target"] += (
             pd.read_csv(sub, index_col="image_name").target.fillna(0).values
         )

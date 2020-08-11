@@ -23,7 +23,7 @@ weight_decay = 2e-5
 pos_weight = 5.5
 label_smoothing = 0.03
 
-max_epochs = 5
+max_epochs = 10
 # #!pip install --upgrade wandb
 # !wandb login 6ff8d5e5bd920e68d1f76b574f1880278b4ac8d2
 
@@ -125,10 +125,12 @@ from efficientnet_pytorch import EfficientNet
 from pytorch_lightning.metrics.classification import AUROC
 from sklearn.metrics import roc_auc_score
 import wandb
+import gc
+
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-SAVE_DIR = OUT / "eff5"
+SAVE_DIR = OUT / "effb5"
 SAVE_DIR.mkdir(exist_ok=True, parents=True)
 print(torch.__version__)
 
@@ -139,15 +141,8 @@ df_folds = pd.read_csv(
     dtype={"fold": np.byte, "target": np.byte},
 )
 
-_ = df_folds.groupby("fold").target.hist(alpha=0.4)
-
-df_folds.groupby("fold").target.mean().to_frame("ratio").T
-
 df_test = pd.read_csv(f"{DATA}/test.csv", index_col="image_name")
 
-ds_train, ds_val, ds_test = load_datasets(fold_number)
-
-len(ds_train), len(ds_val), len(ds_test)
 
 
 class Model(pl.LightningModule):
@@ -264,24 +259,6 @@ class Model(pl.LightningModule):
             pin_memory=False,
         )
 
-
-checkpoint = f"{SAVE_DIR}/best-{fold_number}.ckpt"
-model = Model()  # .load_from_checkpoint(str(checkpoint))
-
-# +
-# Plot some training images
-# import torchvision.utils as vutils
-# batch, targets = next(iter(model.train_dataloader()))
-
-# plt.figure(figsize=(16, 8))
-# plt.axis("off")
-# plt.title("Training Images")
-# _ = plt.imshow(vutils.make_grid(
-#     batch[:16], nrow=8, padding=2, normalize=True).cpu().numpy().transpose((1, 2, 0)))
-
-# targets[:16].reshape([2, 8]) if len(targets) >= 16 else targets
-# -
-
 wandb.init(
     project="melanoma",
     tags=["lightning", "adam", "OneCycle"],
@@ -292,47 +269,51 @@ wandb_logger = WandbLogger(
     tags=["lightning", "adam", "OneCycle"],
     name=f"upsampled_full_data-fold-{fold_number}",
 )
+
+model = Model()
 wandb.watch(model)
 
-# + _kg_hide-input=true
-# # test the same images
-# with torch.no_grad():
-#     print(model(batch[:16]).reshape([len(targets)//8,8]).sigmoid())
-# del batch; del targets
 
-checkpoint_callback = pl.callbacks.ModelCheckpoint(
-    filepath=f"{SAVE_DIR}/best-{fold_number}",
-    save_top_k=1,
-    monitor="val_auc",
-    mode="max",
-)
-if checkpoint:
-    trainer = pl.Trainer(
-        resume_from_checkpoint=checkpoint,
-        default_root_dir=SAVE_DIR,
-        tpu_cores=tpu_cores,
-        gpus=gpus,
-        precision=16,  # if gpus else 32,
-        max_epochs=max_epochs,
-        checkpoint_callback=checkpoint_callback,
-        logger=wandb_logger,
+for fold_number in range(5):
+    wandb.log({'fold': fold_number})
+
+    ds_train, ds_val, ds_test = load_datasets(fold_number)
+
+    checkpoint = f"{SAVE_DIR}/best-{fold_number}.ckpt"
+
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(
+        filepath=f"{SAVE_DIR}/best-{fold_number}",
+        save_top_k=1,
+        monitor="val_auc",
+        mode="max",
     )
-else:
-    trainer = pl.Trainer(
-        default_root_dir=SAVE_DIR,
-        tpu_cores=tpu_cores,
-        gpus=gpus,
-        precision=16,  # if gpus else 32,
-        max_epochs=max_epochs,
-        checkpoint_callback=checkpoint_callback,
-        logger=wandb_logger,
-    )
+    if checkpoint:
+        trainer = pl.Trainer(
+            resume_from_checkpoint=checkpoint,
+            num_sanity_val_steps=0,
+            default_root_dir=SAVE_DIR,
+            tpu_cores=tpu_cores,
+            gpus=gpus,
+            precision=16,  # if gpus else 32,
+            max_epochs=max_epochs,
+            checkpoint_callback=checkpoint_callback,
+            logger=wandb_logger,
+        )
+    else:
+        trainer = pl.Trainer(
+            default_root_dir=SAVE_DIR,
+            tpu_cores=tpu_cores,
+            gpus=gpus,
+            precision=16,  # if gpus else 32,
+            max_epochs=max_epochs,
+            checkpoint_callback=checkpoint_callback,
+            logger=wandb_logger,
+        )
 
-import gc
 
-torch.cuda.empty_cache()
-gc.collect()
-torch.cuda.empty_cache()
-gc.collect()
+    torch.cuda.empty_cache()
+    gc.collect()
+    torch.cuda.empty_cache()
+    gc.collect()
 
-trainer.fit(model)
+    trainer.fit(model)
